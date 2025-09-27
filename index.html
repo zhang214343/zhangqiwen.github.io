@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>异步寻宝之旅</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .treasure-hunt {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+        
+        .step {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .step.active {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        .step.completed {
+            background: rgba(46, 204, 113, 0.2);
+        }
+        
+        .step.failed {
+            background: rgba(231, 76, 60, 0.2);
+        }
+        
+        .step-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #3498db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        .step-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+        
+        .step-content {
+            margin-left: 55px;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .step-icon {
+            font-size: 2rem;
+            margin-right: 15px;
+        }
+        
+        .progress-container {
+            margin-top: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            height: 20px;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 50px;
+            background: #e74c3c;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+        }
+        
+        button:disabled {
+            background: #7f8c8d;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .treasure-result {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            font-size: 1.3rem;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .animation-area {
+            height: 200px;
+            margin: 30px 0;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .character {
+            width: 60px;
+            height: 60px;
+            background: #3498db;
+            border-radius: 50%;
+            position: absolute;
+            left: 50px;
+            transition: left 2s ease;
+        }
+        
+        .obstacle {
+            width: 40px;
+            height: 40px;
+            background: #e74c3c;
+            border-radius: 5px;
+            position: absolute;
+            right: 100px;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .treasure {
+            width: 70px;
+            height: 70px;
+            background: #f1c40f;
+            border-radius: 10px;
+            position: absolute;
+            right: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            box-shadow: 0 0 20px gold;
+        }
+        
+        .message {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 15px;
+            border-radius: 10px;
+            top: 20px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .message.show {
+            opacity: 1;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .step {
+                padding: 15px;
+            }
+            
+            .step-content {
+                margin-left: 0;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .step-icon {
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>异步寻宝之旅</h1>
+            <p class="subtitle">使用async/await探索神秘宝藏</p>
+        </header>
+        
+        <div class="animation-area">
+            <div class="character"></div>
+            <div class="obstacle"></div>
+            <div class="treasure">💎</div>
+            <div class="message" id="animation-message">开始寻宝！</div>
+        </div>
+        
+        <div class="treasure-hunt">
+            <div class="step" id="step1">
+                <div class="step-header">
+                    <div class="step-number">1</div>
+                    <div class="step-title">获取初始线索</div>
+                </div>
+                <div class="step-content">
+                    <div class="step-icon">🔍</div>
+                    <div class="step-text">等待线索...</div>
+                </div>
+            </div>
+            
+            <div class="step" id="step2">
+                <div class="step-header">
+                    <div class="step-number">2</div>
+                    <div class="step-title">解码古代文字</div>
+                </div>
+                <div class="step-content">
+                    <div class="step-icon">📜</div>
+                    <div class="step-text">等待解码...</div>
+                </div>
+            </div>
+            
+            <div class="step" id="step3">
+                <div class="step-header">
+                    <div class="step-number">3</div>
+                    <div class="step-title">解开谜题</div>
+                </div>
+                <div class="step-content">
+                    <div class="step-icon">🧩</div>
+                    <div class="step-text">等待谜题...</div>
+                </div>
+            </div>
+            
+            <div class="step" id="step4">
+                <div class="step-header">
+                    <div class="step-number">4</div>
+                    <div class="step-title">与NPC互动</div>
+                </div>
+                <div class="step-content">
+                    <div class="step-icon">🧙‍♂️</div>
+                    <div class="step-text">等待互动...</div>
+                </div>
+            </div>
+            
+            <div class="step" id="step5">
+                <div class="step-header">
+                    <div class="step-number">5</div>
+                    <div class="step-title">寻找神庙</div>
+                </div>
+                <div class="step-content">
+                    <div class="step-icon">🏛️</div>
+                    <div class="step-text">等待搜索...</div>
+                </div>
+            </div>
+            
+            <div class="step" id="step6">
+                <div class="step-header">
+                    <div class="step-number">6</div>
+                    <div class="step-title">打开宝箱</div>
+                </div>
+                <div class="step-content">
+                    <div class="step-icon">🎁</div>
+                    <div class="step-text">等待开启...</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="progress-container">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
+        
+        <div class="controls">
+            <button id="start-btn">开始寻宝</button>
+            <button id="reset-btn" disabled>重置</button>
+        </div>
+        
+        <div class="treasure-result" id="result">
+            点击"开始寻宝"按钮开始你的冒险！
+        </div>
+    </div>
+
+    <script>
+        // 扩展的寻宝API
+        class TreasureMap {
+            static getInitialClue() {
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        resolve("在古老的图书馆里找到了第一个线索：'月光下的石像指向北方'");
+                    }, 1500);
+                });
+            }
+
+            static decodeAncientScript(clue) {
+                return new Promise((resolve, reject) => {
+                    setTimeout(() => {
+                        if (!clue) {
+                            reject("没有线索可以解码!");
+                        }
+                        resolve("解码成功!线索指向一座被遗忘的神庙，位于北方的迷雾山脉中...");
+                    }, 2000);
+                });
+            }
+
+            static solvePuzzle(location) {
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        resolve("谜题解决! 三个石像必须按照'狮鹫、龙、独角兽'的顺序转动才能打开密道...");
+                    }, 1800);
+                });
+            }
+
+            static interactWithNPC() {
+                return new Promise((resolve, reject) => {
+                    setTimeout(() => {
+                        const random = Math.random();
+                        if (random < 0.3) {
+                            reject("神秘的守护者拒绝帮助你，你需要找到信物才能获得他的信任。");
+                        } else {
+                            resolve("守护者被你的诚意打动，给了你一把古老的钥匙！");
+                        }
+                    }, 2200);
+                });
+            }
+
+            static searchTemple(location) {
+                return new Promise((resolve, reject) => {
+                    setTimeout(() => {
+                        const random = Math.random();
+                        if (random < 0.4) {
+                            reject("糟糕!遇到了神庙守卫!你需要找到另一种进入方式。");
+                        }
+                        resolve("找到了一个神秘的箱子，上面有三个锁孔...");
+                    }, 2500);
+                });
+            }
+
+            static openTreasureBox() {
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        resolve("恭喜!你找到了传说中的宝藏——智慧之石!");
+                    }, 1500);
+                });
+            }
+        }
+
+        // DOM元素
+        const steps = document.querySelectorAll('.step');
+        const progressBar = document.getElementById('progress-bar');
+        const startBtn = document.getElementById('start-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const resultDiv = document.getElementById('result');
+        const character = document.querySelector('.character');
+        const message = document.getElementById('animation-message');
+        
+        // 更新步骤状态
+        function updateStep(stepIndex, status, text) {
+            const step = steps[stepIndex];
+            const stepText = step.querySelector('.step-text');
+            
+            // 移除所有状态类
+            step.classList.remove('active', 'completed', 'failed');
+            
+            // 添加新状态类
+            if (status === 'active') {
+                step.classList.add('active');
+                stepText.textContent = '进行中...';
+            } else if (status === 'completed') {
+                step.classList.add('completed');
+                stepText.textContent = text || '完成!';
+            } else if (status === 'failed') {
+                step.classList.add('failed');
+                stepText.textContent = text || '失败!';
+            }
+            
+            // 更新进度条
+            const progress = ((stepIndex + 1) / steps.length) * 100;
+            progressBar.style.width = status === 'completed' ? `${progress}%` : 
+                                     status === 'failed' ? `${progress}%` : 
+                                     `${(stepIndex / steps.length) * 100}%`;
+        }
+        
+        // 显示动画消息
+        function showMessage(text) {
+            message.textContent = text;
+            message.classList.add('show');
+            setTimeout(() => {
+                message.classList.remove('show');
+            }, 3000);
+        }
+        
+        // 移动角色
+        function moveCharacter(position) {
+            character.style.left = `${position}px`;
+        }
+        
+        // 异步寻宝函数
+        async function findTreasureWithAsyncAwait() {
+            try {
+                // 步骤1: 获取初始线索
+                updateStep(0, 'active');
+                showMessage("在图书馆中寻找线索...");
+                moveCharacter(100);
+                const clue = await TreasureMap.getInitialClue();
+                updateStep(0, 'completed', clue);
+                resultDiv.textContent = clue;
+                
+                // 步骤2: 解码古代文字
+                updateStep(1, 'active');
+                showMessage("解码古代文字...");
+                moveCharacter(200);
+                const location = await TreasureMap.decodeAncientScript(clue);
+                updateStep(1, 'completed', location);
+                resultDiv.textContent = location;
+                
+                // 步骤3: 解开谜题 (新增情节)
+                updateStep(2, 'active');
+                showMessage("解开古老谜题...");
+                moveCharacter(350);
+                const puzzleSolution = await TreasureMap.solvePuzzle(location);
+                updateStep(2, 'completed', puzzleSolution);
+                resultDiv.textContent = puzzleSolution;
+                
+                // 步骤4: 与NPC互动 (新增情节)
+                updateStep(3, 'active');
+                showMessage("与神秘守护者交谈...");
+                moveCharacter(500);
+                const npcResult = await TreasureMap.interactWithNPC();
+                updateStep(3, 'completed', npcResult);
+                resultDiv.textContent = npcResult;
+                
+                // 步骤5: 寻找神庙
+                updateStep(4, 'active');
+                showMessage("在迷雾山脉中寻找神庙...");
+                moveCharacter(650);
+                const box = await TreasureMap.searchTemple(location);
+                updateStep(4, 'completed', box);
+                resultDiv.textContent = box;
+                
+                // 步骤6: 打开宝箱
+                updateStep(5, 'active');
+                showMessage("打开宝箱...");
+                moveCharacter(800);
+                const treasure = await TreasureMap.openTreasureBox();
+                updateStep(5, 'completed', treasure);
+                resultDiv.textContent = treasure;
+                
+                // 最终成功消息
+                showMessage("寻宝成功！");
+                startBtn.disabled = true;
+                resetBtn.disabled = false;
+                
+            } catch (error) {
+                // 处理错误
+                const currentStep = Array.from(steps).findIndex(step => step.classList.contains('active'));
+                updateStep(currentStep, 'failed', error);
+                resultDiv.textContent = `任务失败: ${error}`;
+                showMessage("寻宝失败！");
+                startBtn.disabled = true;
+                resetBtn.disabled = false;
+            }
+        }
+        
+        // 重置游戏
+        function resetGame() {
+            steps.forEach(step => {
+                step.classList.remove('active', 'completed', 'failed');
+                const stepText = step.querySelector('.step-text');
+                stepText.textContent = stepText.textContent.includes('线索') ? '等待线索...' : 
+                                      stepText.textContent.includes('解码') ? '等待解码...' :
+                                      stepText.textContent.includes('谜题') ? '等待谜题...' :
+                                      stepText.textContent.includes('互动') ? '等待互动...' :
+                                      stepText.textContent.includes('搜索') ? '等待搜索...' :
+                                      '等待开启...';
+            });
+            
+            progressBar.style.width = '0%';
+            resultDiv.textContent = '点击"开始寻宝"按钮开始你的冒险！';
+            moveCharacter(50);
+            startBtn.disabled = false;
+            resetBtn.disabled = true;
+        }
+        
+        // 事件监听
+        startBtn.addEventListener('click', findTreasureWithAsyncAwait);
+        resetBtn.addEventListener('click', resetGame);
+    </script>
+</body>
+</html>
